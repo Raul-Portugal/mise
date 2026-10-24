@@ -82,11 +82,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     resetForm();
 
     try {
+      const redirectUrl = window.location.origin + window.location.pathname;
+
       if (mode === 'magic') {
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim(),
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: redirectUrl,
           },
         });
         if (error) throw error;
@@ -103,9 +105,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           onClose();
         }
       } else if (mode === 'signup') {
+        const redirectUrl = window.location.origin + window.location.pathname;
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
         });
         if (error) throw error;
         if (data.user && data.session) {
@@ -113,7 +119,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           await syncAllRecipes(data.user);
           onClose();
         } else {
-          setSuccessMsg('Account created! If email confirmation is enabled, check your inbox.');
+          setSuccessMsg('Account created! Check your email for the confirmation link to complete login.');
         }
       }
     } catch (err: any) {

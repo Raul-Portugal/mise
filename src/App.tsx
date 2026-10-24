@@ -75,6 +75,9 @@ export const App: React.FC = () => {
       if (currentUser) {
         syncAllRecipes(currentUser);
       }
+      if (window.location.hash.includes('access_token=') || window.location.hash.includes('error=')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     });
 
     // Listen to Auth state changes
@@ -83,6 +86,9 @@ export const App: React.FC = () => {
       setUser(currentUser);
       if (currentUser) {
         syncAllRecipes(currentUser);
+      }
+      if (window.location.hash.includes('access_token=')) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     });
 
