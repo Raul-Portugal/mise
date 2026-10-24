@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-10-24T12:43:57.392Z",
+  "sources": {
+    "kingArthur": {
+      "url": "https://www.kingarthurbaking.com/learn/ingredient-weight-chart",
+      "recordsCount": 321
+    },
+    "usdaSrLegacy": {
+      "dataset": "FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+      "url": "https://fdc.nal.usda.gov/download-datasets.html",
+      "recordsCount": 2186
+    }
+  },
+  "totalRecords": 2505,
+  "sampleRecords": [
+    {
+      "id": "ka_00_pizza_flour",
+      "name": "'00' Pizza Flour",
+      "aliases": [
+        "'00' pizza flour",
+        "pizza flour",
+        "00 flour",
+        "double zero flour"
+      ],
+      "category": "flour",
+      "gramsPerCup": 116,
+      "gramsPerTbsp": 7.3,
+      "densityGPerMl": 0.4903,
+      "notes": "King Arthur verified: 1 cup = 116g (4 oz)",
+      "source": "king_arthur"
+    },
+    {
+      "id": "ka_agave_syrup",
+      "name": "Agave syrup",
+      "aliases": [
+        "agave syrup"
+      ],
+      "category": "sugar",
+      "gramsPerCup": 336,
+      "gramsPerTbsp": 21,
+      "densityGPerMl": 1.4202,
+      "notes": "King Arthur verified: 1/4 cup = 84g (3 oz)",
+      "source": "king_arthur"
+    },
+    {
+      "id": "ka_all_purpose_baking_mix",
+      "name": "All-Purpose Baking Mix",
+      "aliases": [
+        "all-purpose baking mix"
+      ],
+      "category": "other",
+      "gramsPerCup": 120,
+      "gramsPerTbsp": 7.5,
+      "densityGPerMl": 0.5072,
+      "notes": "King Arthur verified: 1 cup = 120g (4 1/4 oz)",
+      "source": "king_arthur"
+    },
+    {
+      "id": "ka_all_purpose_flour",
+      "name": "All-Purpose Flour",
+      "aliases": [
+        "all-purpose flour",
+        "ap flour",
+        "all purpose flour",
+        "plain flour",
+        "white flour",
+        "flour"
+      ],
+      "category": "flour",
+      "gramsPerCup": 120,
+      "gramsPerTbsp": 7.5,
+      "densityGPerMl": 0.5072,
+      "notes": "King Arthur verified: 1 cup = 120g (4 1/4 oz)",
+      "source": "king_arthur"
+    },
+    {
+      "id": "ka_almond_butter",
+      "name": "Almond butter",
+      "aliases": [
+        "almond butter"
+      ],
+      "category": "fat_dairy",
+      "gramsPerCup": 272,
+      "gramsPerTbsp": 17,
+      "densityGPerMl": 1.1497,
+      "notes": "King Arthur verified: 1/4 cup = 68g (2 1/3 oz)",
+      "source": "king_arthur"
+    }
+  ]
+}
