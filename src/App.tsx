@@ -24,11 +24,16 @@ import { TimerDock } from './components/TimerDock';
 import { ImportExportModal } from './components/ImportExportModal';
 import { DensityManager } from './components/DensityManager';
 import { AuthModal } from './components/AuthModal';
+import { MealPlannerView } from './components/MealPlanner/MealPlannerView';
+import { ShoppingListView } from './components/ShoppingList/ShoppingListView';
+import { getISOWeekId } from './utils/dateUtils';
 
-type ViewMode = 'list' | 'detail' | 'editor';
+type ViewMode = 'list' | 'detail' | 'editor' | 'planner' | 'shopping';
 
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('list');
+  const [activeShoppingWeekId, setActiveShoppingWeekId] = useState<string>(() => getISOWeekId());
   const [isCookingMode, setIsCookingMode] = useState<boolean>(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>(undefined);
@@ -129,6 +134,9 @@ export const App: React.FC = () => {
 
   // Recipe actions
   const handleSelectRecipe = (recipe: Recipe) => {
+    if (viewMode !== 'detail') {
+      setPreviousViewMode(viewMode);
+    }
     setSelectedRecipeId(recipe.id);
     setViewMode('detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -181,30 +189,37 @@ export const App: React.FC = () => {
     setDensities(updated);
   };
 
-  // Central active timer countdown interval
+  // Central active timer countdown interval (Wall-clock accurate across phone locks)
   useEffect(() => {
     const hasRunning = activeTimers.some((t) => t.isRunning);
     if (!hasRunning) return;
 
     const interval = setInterval(() => {
       setActiveTimers((prev) => {
+        const now = Date.now();
         let soundNeeded = false;
         const updated = prev.map((t) => {
           if (!t.isRunning) return t;
 
-          if (t.remainingSeconds <= 1) {
+          // Compute remaining time against wall-clock targetEndTime
+          const target = t.targetEndTime || (now + t.remainingSeconds * 1000);
+          const rem = Math.max(0, Math.round((target - now) / 1000));
+
+          if (rem <= 0) {
             if (!t.isCompleted) soundNeeded = true;
             return {
               ...t,
               remainingSeconds: 0,
               isRunning: false,
               isCompleted: true,
+              targetEndTime: undefined,
             };
           }
 
           return {
             ...t,
-            remainingSeconds: t.remainingSeconds - 1,
+            remainingSeconds: rem,
+            targetEndTime: target,
           };
         });
 
@@ -219,12 +234,62 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [activeTimers.some((t) => t.isRunning), soundEnabled]);
 
-  // Enhanced Timer actions
+  // Synchronize timers immediately when waking from phone lock or returning from background tab
+  useEffect(() => {
+    const syncTimers = () => {
+      setActiveTimers((prev) => {
+        const now = Date.now();
+        let soundNeeded = false;
+        let changed = false;
+
+        const updated = prev.map((t) => {
+          if (!t.isRunning || !t.targetEndTime) return t;
+
+          const rem = Math.max(0, Math.round((t.targetEndTime - now) / 1000));
+          if (rem <= 0) {
+            if (!t.isCompleted) soundNeeded = true;
+            changed = true;
+            return {
+              ...t,
+              remainingSeconds: 0,
+              isRunning: false,
+              isCompleted: true,
+              targetEndTime: undefined,
+            };
+          }
+
+          if (rem !== t.remainingSeconds) {
+            changed = true;
+            return { ...t, remainingSeconds: rem };
+          }
+
+          return t;
+        });
+
+        if (soundNeeded && soundEnabled) {
+          playKitchenChime();
+        }
+
+        return changed ? updated : prev;
+      });
+    };
+
+    document.addEventListener('visibilitychange', syncTimers);
+    window.addEventListener('focus', syncTimers);
+
+    return () => {
+      document.removeEventListener('visibilitychange', syncTimers);
+      window.removeEventListener('focus', syncTimers);
+    };
+  }, [soundEnabled]);
+
+  // Enhanced Timer actions with wall-clock targetEndTime
   const handleStartTimer = (
     label: string,
     durationSeconds: number,
     options?: { stepNumber?: number; timerKey?: string; recipeId?: string; recipeTitle?: string }
   ) => {
+    const now = Date.now();
     setActiveTimers((prev) => {
       // If a timer with this timerKey already exists, toggle pause/play or reset
       if (options?.timerKey) {
@@ -236,13 +301,16 @@ export const App: React.FC = () => {
             updated[existingIdx] = {
               ...existing,
               remainingSeconds: existing.durationSeconds,
+              targetEndTime: now + existing.durationSeconds * 1000,
               isRunning: true,
               isCompleted: false,
             };
           } else {
+            const nextRunning = !existing.isRunning;
             updated[existingIdx] = {
               ...existing,
-              isRunning: !existing.isRunning,
+              isRunning: nextRunning,
+              targetEndTime: nextRunning ? now + existing.remainingSeconds * 1000 : undefined,
             };
           }
           return updated;
@@ -263,13 +331,16 @@ export const App: React.FC = () => {
             updated[existingIdx] = {
               ...existing,
               remainingSeconds: existing.durationSeconds,
+              targetEndTime: now + existing.durationSeconds * 1000,
               isRunning: true,
               isCompleted: false,
             };
           } else {
+            const nextRunning = !existing.isRunning;
             updated[existingIdx] = {
               ...existing,
-              isRunning: !existing.isRunning,
+              isRunning: nextRunning,
+              targetEndTime: nextRunning ? now + existing.remainingSeconds * 1000 : undefined,
             };
           }
           return updated;
@@ -277,10 +348,11 @@ export const App: React.FC = () => {
       }
 
       const newTimer: ActiveTimer = {
-        id: `timer_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+        id: `timer_${now}_${Math.random().toString(36).substring(2, 5)}`,
         label,
         durationSeconds,
         remainingSeconds: durationSeconds,
+        targetEndTime: now + durationSeconds * 1000,
         isRunning: true,
         isCompleted: false,
         stepNumber: options?.stepNumber,
@@ -294,6 +366,7 @@ export const App: React.FC = () => {
   };
 
   const handleToggleTimer = (id: string) => {
+    const now = Date.now();
     setActiveTimers((prev) =>
       prev.map((t) => {
         if (t.id !== id) return t;
@@ -301,28 +374,36 @@ export const App: React.FC = () => {
           return {
             ...t,
             remainingSeconds: t.durationSeconds,
+            targetEndTime: now + t.durationSeconds * 1000,
             isRunning: true,
             isCompleted: false,
           };
         }
-        return { ...t, isRunning: !t.isRunning };
+        const nextRunning = !t.isRunning;
+        return {
+          ...t,
+          isRunning: nextRunning,
+          targetEndTime: nextRunning ? now + t.remainingSeconds * 1000 : undefined,
+        };
       })
     );
   };
 
   const handleAddMinute = (id: string) => {
+    const now = Date.now();
     setActiveTimers((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              remainingSeconds: t.remainingSeconds + 60,
-              durationSeconds: t.durationSeconds + 60,
-              isCompleted: false,
-              isRunning: true,
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const newRemaining = t.remainingSeconds + 60;
+        return {
+          ...t,
+          remainingSeconds: newRemaining,
+          durationSeconds: t.durationSeconds + 60,
+          targetEndTime: t.isRunning ? now + newRemaining * 1000 : undefined,
+          isCompleted: false,
+          isRunning: true,
+        };
+      })
     );
   };
 
@@ -333,6 +414,7 @@ export const App: React.FC = () => {
           ? {
               ...t,
               remainingSeconds: t.durationSeconds,
+              targetEndTime: undefined,
               isRunning: false,
               isCompleted: false,
             }
@@ -354,15 +436,23 @@ export const App: React.FC = () => {
       {/* Top Header */}
       {!isCookingMode && (
         <Header
+          currentTab={
+            viewMode === 'planner'
+              ? 'planner'
+              : viewMode === 'shopping'
+              ? 'shopping'
+              : 'recipes'
+          }
+          onSelectTab={(tab) => {
+            if (tab === 'recipes') setViewMode('list');
+            else if (tab === 'planner') setViewMode('planner');
+            else if (tab === 'shopping') setViewMode('shopping');
+          }}
           onNewRecipe={handleNewRecipe}
           onOpenImportExport={() => setIsImportExportOpen(true)}
           onOpenDensities={() => setIsDensitiesOpen(true)}
           onOpenAuth={() => setIsAuthOpen(true)}
           user={user}
-          unitMode={unitMode}
-          onUnitModeChange={handleUnitModeChange}
-          exactMode={exactMode}
-          onToggleExactMode={handleToggleExactMode}
           soundEnabled={soundEnabled}
           onToggleSound={handleToggleSound}
         />
@@ -379,6 +469,29 @@ export const App: React.FC = () => {
           />
         )}
 
+        {viewMode === 'planner' && (
+          <MealPlannerView
+            recipes={recipes}
+            onOpenShoppingList={(targetWeekId) => {
+              setActiveShoppingWeekId(targetWeekId);
+              setViewMode('shopping');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onViewRecipe={handleSelectRecipe}
+          />
+        )}
+
+        {viewMode === 'shopping' && (
+          <ShoppingListView
+            weekId={activeShoppingWeekId}
+            recipes={recipes}
+            densityDatabase={densities}
+            globalUnitMode={unitMode}
+            onBackToPlanner={() => setViewMode('planner')}
+            onViewRecipe={handleSelectRecipe}
+          />
+        )}
+
         {viewMode === 'detail' && selectedRecipe && (
           <RecipeDetail
             recipe={selectedRecipe}
@@ -387,7 +500,7 @@ export const App: React.FC = () => {
             exactMode={exactMode}
             onToggleExactMode={handleToggleExactMode}
             densityDatabase={densities}
-            onBack={() => setViewMode('list')}
+            onBack={() => setViewMode(previousViewMode || 'list')}
             onEdit={handleEditRecipe}
             onDelete={handleDeleteRecipe}
             onStartCooking={handleStartCooking}
@@ -445,9 +558,19 @@ export const App: React.FC = () => {
       {/* Mobile Bottom Thumb Navigation */}
       {!isCookingMode && (
         <Navigation
-          currentTab={viewMode === 'editor' ? 'new' : 'recipes'}
+          currentTab={
+            viewMode === 'editor'
+              ? 'new'
+              : viewMode === 'planner'
+              ? 'planner'
+              : viewMode === 'shopping'
+              ? 'shopping'
+              : 'recipes'
+          }
           onSelectTab={(tab) => {
             if (tab === 'recipes') setViewMode('list');
+            else if (tab === 'planner') setViewMode('planner');
+            else if (tab === 'shopping') setViewMode('shopping');
             else if (tab === 'new') handleNewRecipe();
             else if (tab === 'densities') setIsDensitiesOpen(true);
             else if (tab === 'settings') setIsImportExportOpen(true);

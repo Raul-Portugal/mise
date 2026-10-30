@@ -57,4 +57,5 @@ export interface ActiveTimer {
   remainingSeconds: number;
   isRunning: boolean;
   isCompleted?: boolean;
+  targetEndTime?: number; // Wall-clock timestamp (ms) when timer reaches 0, preventing pauses on phone lock
 }

@@ -4,6 +4,7 @@ import { DensityRecord } from '../types/density';
 import { parseIngredientLine, tokenizeIngredientLine } from '../engine/ingredientParser';
 import { extractTimers } from '../engine/stepParser';
 import { findDensity, getCandidateDensities } from '../engine/converter';
+import { QUICK_MEAL_TAGS } from '../utils/mealTags';
 import {
   ArrowLeft,
   Save,
@@ -277,6 +278,47 @@ export const RecipeEditor: React.FC<RecipeEditorProps> = ({
               placeholder="Baking, Italian, Dinner, Make-Ahead"
               className="w-full text-xs font-mono bg-alabaster border border-stone-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-terracotta"
             />
+            {/* Quick Meal Type Tags */}
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-warm-grey">Meal Tags:</span>
+              {QUICK_MEAL_TAGS.map((tag) => {
+                const currentTags = tagsString
+                  .split(',')
+                  .map((t) => t.trim().toLowerCase())
+                  .filter(Boolean);
+                const isSelected = currentTags.includes(tag.toLowerCase());
+
+                const handleToggleTag = () => {
+                  const rawList = tagsString
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean);
+                  let updatedList: string[];
+                  if (isSelected) {
+                    updatedList = rawList.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+                  } else {
+                    updatedList = [...rawList, tag];
+                  }
+                  setTagsString(updatedList.join(', '));
+                };
+
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={handleToggleTag}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-sans font-medium transition-all ${
+                      isSelected
+                        ? 'bg-terracotta text-white shadow-xs'
+                        : 'bg-stone-200/80 hover:bg-stone-300 text-charcoal border border-stone-300/60'
+                    }`}
+                  >
+                    {isSelected ? '✓ ' : '+ '}
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

@@ -43,13 +43,17 @@ Mise/
 │   │   ├── recipe.ts            # Recipe, Step, Timer, Serving types
 │   │   ├── ingredient.ts        # Ingredient & tokenization types
 │   │   ├── density.ts           # Density record & database types
-│   │   └── conversion.ts       # Units, conversion modes, and rounding types
+│   │   ├── conversion.ts        # Units, conversion modes, and rounding types
+│   │   └── mealPlan.ts          # Weekly meal plans, slots, and smart shopping list
 │   ├── data/
 │   │   ├── densityDatabase.ts   # 2,505 factually verified culinary density records
 │   │   └── seedRecipes.ts       # Curated initial recipes (Pizza, Cookies, Omelette)
 │   ├── db/
 │   │   ├── index.ts             # Dexie IndexedDB client & schema definition
 │   │   └── recipes.ts           # CRUD helper operations for recipes
+│   ├── hooks/
+│   │   ├── useMealPlan.ts       # Persistent weekly meal plan state & actions
+│   │   └── useShoppingListState.ts # Custom items & persistent checklist state
 │   ├── engine/                  # Core algorithmic & mathematical culinary logic
 │   │   ├── units.ts             # Unit definitions & volume/weight base scales
 │   │   ├── fractions.ts         # Fraction parser & Imperial culinary fraction snapper
@@ -60,18 +64,31 @@ Mise/
 │   ├── utils/
 │   │   ├── audio.ts             # Web Audio API chime synthesis (zero external audio)
 │   │   ├── wakeLock.ts          # Screen Wake Lock manager
-│   │   └── formatters.ts        # Time and duration formatters
+│   │   ├── formatters.ts        # Time and duration formatters
+│   │   ├── dateUtils.ts         # ISO 8601 week calculations and date formatters
+│   │   ├── mealTags.ts          # Recipe tag normalizer & meal category mapper
+│   │   ├── shoppingListAggregator.ts # 4-stage cross-recipe grocery aggregation
+│   │   └── __tests__/           # Date, tags, and shopping aggregator tests
 │   └── components/
-│       ├── Header.tsx           # Editorial top header
+│       ├── Header.tsx           # Editorial top header with view switcher tabs
 │       ├── Navigation.tsx       # Bottom-anchored mobile thumb navigation (48px targets)
 │       ├── RecipeList.tsx       # Recipe library, search, and tag filters
 │       ├── RecipeCard.tsx       # Editorial recipe card
 │       ├── RecipeDetail.tsx     # Warm Editorial reading view with Scaler & Units
 │       ├── CookingMode.tsx      # Dark Cast Iron hands-free kitchen interface
 │       ├── TimerDock.tsx        # Persistent multi-timer dock with chimes
-│       ├── RecipeEditor.tsx     # "Paste & Parse" smart text editor
+│       ├── RecipeEditor.tsx     # "Paste & Parse" editor with quick meal-tags
 │       ├── ImportExportModal.tsx # JSON-LD, Cooklang, and JSON file importer/exporter
-│       └── DensityManager.tsx   # Ingredient density browser and custom manager
+│       ├── DensityManager.tsx   # Ingredient density browser and custom manager
+│       ├── MealPlanner/         # 7-day editorial planner & drag-and-drop drawer
+│       │   ├── MealPlannerView.tsx   # Main weekly planner coordinator
+│       │   ├── MealPlannerGrid.tsx   # Desktop 7x4 editorial schedule
+│       │   ├── MealPlannerMobile.tsx # Mobile day ribbon & meal agenda
+│       │   ├── MealSlotCard.tsx      # Draggable planned recipe card with servings stepper
+│       │   ├── RecipeDrawer.tsx      # Collapsible lateral drawer with tagged chips
+│       │   └── AssignRecipeModal.tsx # Quick-assign meal selector modal
+│       └── ShoppingList/        # Smart shopping list with sensible rounding
+│           └── ShoppingListView.tsx  # Categorized grocery aisles & pantry breakdown
 ```
 
 ---

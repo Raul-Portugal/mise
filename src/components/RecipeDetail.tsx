@@ -17,6 +17,7 @@ import {
   Timer as TimerIcon,
   Sparkles,
   Info,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface RecipeDetailProps {
@@ -162,9 +163,9 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
       </div>
 
       {/* Control Strip: Scaler & Unit Switcher & Start Cooking */}
-      <div className="bg-stone-surface border border-stone-border rounded-2xl p-4 sm:p-5 mb-10 shadow-tactile flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-stone-surface border border-stone-border rounded-2xl p-4 sm:p-5 mb-10 shadow-tactile flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         {/* Dynamic Yield Scaler */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-medium text-warm-grey uppercase tracking-wider">Yield</span>
           <div className="flex items-center bg-alabaster border border-stone-border rounded-lg p-1">
             <button
@@ -204,13 +205,67 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
           </div>
         </div>
 
+        {/* Recipe-Specific Unit & Rounding Controls */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Unit Toggle Pill */}
+          <div className="flex items-center bg-alabaster border border-stone-border rounded-xl p-0.5 shadow-2xs text-xs font-medium">
+            <button
+              onClick={() => onUnitModeChange('metric')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                unitMode === 'metric'
+                  ? 'bg-charcoal text-alabaster shadow-xs font-semibold'
+                  : 'text-warm-grey hover:text-charcoal'
+              }`}
+              title="Weight-first metric conversions (g & ml)"
+            >
+              Metric (g)
+            </button>
+            <button
+              onClick={() => onUnitModeChange('imperial')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                unitMode === 'imperial'
+                  ? 'bg-charcoal text-alabaster shadow-xs font-semibold'
+                  : 'text-warm-grey hover:text-charcoal'
+              }`}
+              title="Imperial fractions & volumes"
+            >
+              Imperial
+            </button>
+            <button
+              onClick={() => onUnitModeChange('original')}
+              className={`px-2.5 py-1.5 rounded-lg transition-all ${
+                unitMode === 'original'
+                  ? 'bg-charcoal text-alabaster shadow-xs font-semibold'
+                  : 'text-warm-grey hover:text-charcoal'
+              }`}
+              title="Original author quantities"
+            >
+              Original
+            </button>
+          </div>
+
+          {/* Exact / Culinary Rounding Toggle */}
+          <button
+            onClick={onToggleExactMode}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+              exactMode
+                ? 'bg-amber-100/80 border-amber-300 text-amber-900 font-semibold'
+                : 'bg-alabaster border-stone-border text-warm-grey hover:text-charcoal'
+            }`}
+            title={exactMode ? 'Raw exact precision active' : 'Culinary smart rounding active'}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>{exactMode ? '= Exact' : '~ Rounded'}</span>
+          </button>
+        </div>
+
         {/* Start Cooking CTA Button */}
         <button
           onClick={() => onStartCooking(recipe)}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-terracotta hover:bg-terracotta-hover text-white font-medium text-sm sm:text-base shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-white font-medium text-sm shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99] shrink-0"
         >
           <Play className="w-4 h-4 fill-current" />
-          <span>Start Cooking Mode</span>
+          <span>Start Cooking</span>
         </button>
       </div>
 
@@ -430,74 +485,6 @@ export const RecipeDetail: React.FC<RecipeDetailProps> = ({
                         return <span key={idx}>{token.value}</span>;
                       })}
                     </p>
-
-                    {/* Standalone timers if explicitly declared on step */}
-                    {step.timers && step.timers.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        {step.timers.map((t, tIdx) => {
-                          const explicitKey = `${recipe.id}_s${step.stepNumber}_exp_${tIdx}`;
-                          const matchingTimer = activeTimers.find(
-                            (tm) =>
-                              tm.timerKey === explicitKey ||
-                              (tm.stepNumber === step.stepNumber &&
-                                Math.abs(tm.durationSeconds - t.durationSeconds) < 2)
-                          );
-
-                          if (matchingTimer) {
-                            if (matchingTimer.isCompleted) {
-                              return (
-                                <span
-                                  key={tIdx}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold animate-pulse"
-                                >
-                                  <TimerIcon className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>{t.label}: Done! 00:00</span>
-                                </span>
-                              );
-                            }
-
-                            return (
-                              <button
-                                key={tIdx}
-                                type="button"
-                                onClick={() => onToggleTimer?.(matchingTimer.id)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer ${
-                                  matchingTimer.isRunning
-                                    ? 'bg-terracotta text-white border-terracotta shadow-sm'
-                                    : 'bg-stone-surface text-charcoal border-stone-border'
-                                }`}
-                                title={matchingTimer.isRunning ? 'Pause timer' : 'Resume timer'}
-                              >
-                                <TimerIcon className={`w-3.5 h-3.5 ${matchingTimer.isRunning ? 'animate-pulse' : ''}`} />
-                                <span>{t.label}:</span>
-                                <span className="tabular-nums font-bold">
-                                  {formatTime(matchingTimer.remainingSeconds)}
-                                </span>
-                                <span className="text-[10px] ml-0.5">{matchingTimer.isRunning ? '⏸' : '▶'}</span>
-                              </button>
-                            );
-                          }
-
-                          return (
-                            <button
-                              key={tIdx}
-                              type="button"
-                              onClick={() =>
-                                onStartTimer(
-                                  `${recipe.title}: Step ${step.stepNumber} (${t.label})`,
-                                  t.durationSeconds,
-                                  { stepNumber: step.stepNumber, timerKey: explicitKey }
-                                )
-                              }
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-alabaster border border-stone-border hover:border-terracotta text-terracotta text-xs font-mono font-medium shadow-sm transition-all cursor-pointer"
-                            >
-                              <TimerIcon className="w-3.5 h-3.5" />
-                              <span>⏱ {t.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 </div>
               );
